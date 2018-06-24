@@ -1,0 +1,74 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: slow
+provisioner: loonison101/nfs
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-uptime
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: slow
+  nfs:
+    path: /nfs/pv-uptime
+    server: server1
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: uptime-claim
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "slow"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: slow
+  volumeName: "pv-uptime"
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: uptime
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        env: prod
+        app: uptime
+    spec:
+      dnsPolicy: Default
+      containers:
+      - name: uptime
+        image: loonison101/uptime:0.0.1
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: uptime-data
+          mountPath: /data
+      volumes:
+      - name: uptime-data
+        persistentVolumeClaim:
+          claimName: uptime-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: uptime
+spec:
+  ports:
+  - port: 1880
+    targetPort: 1880
+  type: NodePort
+  selector:
+    app: uptime
+    env: prod
