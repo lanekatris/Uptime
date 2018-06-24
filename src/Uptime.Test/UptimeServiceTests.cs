@@ -7,6 +7,7 @@ namespace Uptime.Test
     [TestClass]
     public class UptimeServiceTests
     {
+        // Testing examples: https://docs.microsoft.com/en-us/aspnet/core/mvc/controllers/testing?view=aspnetcore-2.1
         [TestMethod]
         public void Get_Basic_Uptime()
         {

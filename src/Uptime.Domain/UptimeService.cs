@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Uptime.Domain
 {
@@ -7,7 +8,20 @@ namespace Uptime.Domain
     {
         public string FilePath { get; set; }
 
-        public UptimeService() : this("c:/temp/uptime.txt") {}
+        //public UptimeService() : this("c:/temp/uptime.txt") {}
+        public UptimeService()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                //this("c:/temp/uptime.txt")
+                //UptimeService("c:/temp/uptime.txt")
+                this.FilePath = "c:/temp/uptime.txt";
+            }
+            else
+            {
+                this.FilePath = "/data/uptime";
+            }
+        }
 
         public UptimeService(string filePath)
         {
