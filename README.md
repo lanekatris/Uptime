@@ -35,7 +35,24 @@ docker run -d -v c:\temp\uptime.txt:/data/uptime -p 8080:80 uptime:0.0.1
 
 **Kubernetes Run**
 ```
+mkdir /nfs/pv-uptime
+sudo ln -s /proc/uptime /nfs/pv-uptime/uptime
+
+kubectl apply -f uptime.k8s.everything.yml
+```
+
+```
 Don't forget the slow network I ha dto leav out, i cut off top of config file
+```
+
+**Result**
+```
+{
+    "seconds": 196976.83,
+    "minutes": 3282.95,
+    "hours": 54.72,
+    "days": 2.28
+}
 ```
 
 ### How?
@@ -56,4 +73,11 @@ A .net app reads the file, parses it, and then returns a JSON object indicating 
 2. **Dockerized**
 3. **Hosted in Kubernetes** 
 
-### Projects Explained
+### Source Code Organization/Purpose
+**Uptime.Web** - The web api that returns JSON with the uptime data, merely an http endpoint
+
+**Uptime.Domain** - Contains all classes/interfaces to serve up the data; all the implementation details
+
+**Uptime.Test** - Extremely basic unit tests to aid in testing the services in `Uptime.Domain`
+
+**uptime.k8s.everything.yml** - All necessary components to function in Kubernetes. Contains the `storage class`, `persistent volume`, `persistent volume claim`, `deployment`, and `service` 

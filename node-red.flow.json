@@ -1,0 +1,243 @@
+[
+  {
+    "id": "83cad474.f7eba8",
+    "type": "tab",
+    "label": "Down Detector",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "20a88cbc.7ac434",
+    "type": "http request",
+    "z": "83cad474.f7eba8",
+    "name": "",
+    "method": "GET",
+    "ret": "obj",
+    "url": "http://192.168.1.94:30854/Uptime",
+    "tls": "",
+    "x": 650,
+    "y": 80,
+    "wires": [
+      [
+        "f586ee66.95acd"
+      ]
+    ]
+  },
+  {
+    "id": "20deb366.63c94c",
+    "type": "debug",
+    "z": "83cad474.f7eba8",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "x": 1150,
+    "y": 280,
+    "wires": []
+  },
+  {
+    "id": "bb963eac.33bd",
+    "type": "inject",
+    "z": "83cad474.f7eba8",
+    "name": "30min interval",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "1800",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "x": 180,
+    "y": 100,
+    "wires": [
+      [
+        "a02e6c7b.4fff8"
+      ]
+    ]
+  },
+  {
+    "id": "a02e6c7b.4fff8",
+    "type": "function",
+    "z": "83cad474.f7eba8",
+    "name": "Setup flow variables",
+    "func": "const customConfig = global.get('customConfig'),\nredis = global.get('redis');\n\n\nif ( !flow.get('redisClient')) {\n        const redisClient = redis.createClient({\n        host: customConfig.REDIS_HOST,\n        port: customConfig.REDIS_PORT,\n        password: customConfig.REDIS_PASSWORD\n    })\n    redisClient.on(\"error\", function (err) {\n        console.log(\"Error \" + err);\n    });\n    flow.set('redisClient', redisClient);\n}\n\n\n\n\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 400,
+    "y": 220,
+    "wires": [
+      [
+        "20a88cbc.7ac434"
+      ]
+    ]
+  },
+  {
+    "id": "f586ee66.95acd",
+    "type": "function",
+    "z": "83cad474.f7eba8",
+    "name": "Evaluate data",
+    "func": "const redisClient =  flow.get('redisClient');\n\nfunction log(message) {\n    node.status({text:new Date() + message})\n}\n\nconst upPayload = {\n    status: 'up'\n};\n\nredisClient.get('uptime-should-ignore', ( err, reply ) => {\n    if (err) return node.error(err);\n    \n    if (reply) {\n        msg.payload = upPayload;\n        log('Redis data found, not sendig notification')\n    } else {\n        // Have we gone down in the last day?\n        if ( msg.payload.days < 1 ) {\n            msg.payload = {\n                status: 'recently-down',\n                minutes: msg.payload.minutes\n            }\n            log('No redis key, looks like server went down')\n        } else {\n            msg.payload = upPayload;\n            log('No redis key, everything online')\n        }\n    }\n    \n    node.send(msg);\n})",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 700,
+    "y": 180,
+    "wires": [
+      [
+        "720032e0.de2cfc"
+      ]
+    ]
+  },
+  {
+    "id": "720032e0.de2cfc",
+    "type": "switch",
+    "z": "83cad474.f7eba8",
+    "name": "Should send alert",
+    "property": "payload.status",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "eq",
+        "v": "recently-down",
+        "vt": "str"
+      },
+      {
+        "t": "eq",
+        "v": "up",
+        "vt": "str"
+      }
+    ],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 2,
+    "x": 810,
+    "y": 280,
+    "wires": [
+      [
+        "fb1f84cf.b83e38"
+      ],
+      [
+        "20deb366.63c94c"
+      ]
+    ]
+  },
+  {
+    "id": "f382297d.276dd8",
+    "type": "e-mail",
+    "z": "83cad474.f7eba8",
+    "server": "smtp.gmail.com",
+    "port": "465",
+    "secure": true,
+    "name": "lanekatris@gmail.com",
+    "dname": "",
+    "x": 1160,
+    "y": 380,
+    "wires": []
+  },
+  {
+    "id": "fb1f84cf.b83e38",
+    "type": "function",
+    "z": "83cad474.f7eba8",
+    "name": "Format notification",
+    "func": "\n// Create a fancy payload\nlet payload = msg.payload;\n\nlet newPayload = `\n    What you must do:\n    -------\n    * Re-sync aquarium light with phone app\n`;\n\n\nmsg.payload = newPayload;\nmsg.topic = 'Power went out or box restart!';\n\n\n\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 890,
+    "y": 380,
+    "wires": [
+      [
+        "f382297d.276dd8",
+        "20deb366.63c94c"
+      ]
+    ]
+  },
+  {
+    "id": "a0acce49.8d091",
+    "type": "http in",
+    "z": "83cad474.f7eba8",
+    "name": "/uptime/ignore",
+    "url": "/uptime/ignore",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 130,
+    "y": 360,
+    "wires": [
+      [
+        "59752000.d7fb3"
+      ]
+    ]
+  },
+  {
+    "id": "332886d7.b13aaa",
+    "type": "http response",
+    "z": "83cad474.f7eba8",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 610,
+    "y": 360,
+    "wires": []
+  },
+  {
+    "id": "59752000.d7fb3",
+    "type": "function",
+    "z": "83cad474.f7eba8",
+    "name": "Create Redis Key",
+    "func": "const customConfig = global.get('customConfig'),\n              redisClient =  flow.get('redisClient');\n        \n        \n// redisClient.get('uptime-should-ignore', ( err, reply ) => {\n//     if (err) return node.error(err);\n    \n//     if ()\n// });\n\nconst cacheKey = 'uptime-should-ignore';\nredisClient.set(cacheKey, true);\nredisClient.expire(cacheKey, 60 * 60 * 24); // 24 hours\nmsg.payload = { success: true };\nnode.send(msg);\n\n//   msg.payload = finalData;\n//             redisClient.set('evernote', JSON.stringify(finalData));\n//             redisClient.expire('evernote', 60 * 60); // 1 hour\n//             node.status({text: 'calling api'})\n//             node.send(msg)",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 390,
+    "y": 360,
+    "wires": [
+      [
+        "332886d7.b13aaa"
+      ]
+    ]
+  },
+  {
+    "id": "bf1e1753.adfe18",
+    "type": "http in",
+    "z": "83cad474.f7eba8",
+    "name": "/uptime/allow",
+    "url": "/uptime/allow",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 130,
+    "y": 420,
+    "wires": [
+      [
+        "1228ad25.b0cf73"
+      ]
+    ]
+  },
+  {
+    "id": "607e5b34.039f34",
+    "type": "http response",
+    "z": "83cad474.f7eba8",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 610,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "1228ad25.b0cf73",
+    "type": "function",
+    "z": "83cad474.f7eba8",
+    "name": "Remove redis key",
+    "func": "const customConfig = global.get('customConfig'),\n              redisClient =  flow.get('redisClient');\n        \n        \n// redisClient.get('uptime-should-ignore', ( err, reply ) => {\n//     if (err) return node.error(err);\n    \n//     if ()\n// });\n\nconst cacheKey = 'uptime-should-ignore';\nredisClient.del(cacheKey);\nmsg.payload = { success: true };\nnode.send(msg);\n\n//   msg.payload = finalData;\n//             redisClient.set('evernote', JSON.stringify(finalData));\n//             redisClient.expire('evernote', 60 * 60); // 1 hour\n//             node.status({text: 'calling api'})\n//             node.send(msg)",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 390,
+    "y": 420,
+    "wires": [
+      [
+        "607e5b34.039f34"
+      ]
+    ]
+  }
+]
