@@ -1,12 +1,12 @@
-### What?
+# What?
 Dockerized .NET core web api that tells you the uptime of a Linux machine
 
-### Why?
+# Why?
 I'd like to be notified when there my home lab server restarts, usually because of a power outage. I then need to re-sync my aquarium light schedule with the lights with my smart phone.
 
 Unfortunately the lights don't keep track of the schedule during power outages. 
 
-### Getting Started
+# Getting Started
 *Note*: Because this is dockerized, it looks for the uptime file in the following locations. You'll need to add them depending if your Windows or Linux/OSX
 
 **Windows**: `C:/temp/uptime.txt`
@@ -51,10 +51,10 @@ kubectl apply -f uptime.k8s.everything.yml
 }
 ```
 
-### Overall functionality
+# Overall functionality
 `/proc/uptime` exposed on a nfs share, containerized application running in k8s can access a persistent volume claim, a http api allows access to the data, and finally a node-red flow checks at a set interval to determine if the box has gone down within 24 hours.
 
-### How?
+# How?
 The `/proc/uptime` file determines the machine uptime in most Linux environments. Example contents below:
 
 `
@@ -65,12 +65,12 @@ The `/proc/uptime` file determines the machine uptime in most Linux environments
 
 **Second number**: Idle time (what is this? :confused:) 
 
-### Goals
+# Goals
 1. **.NET core** - My experience in the past was with the full framework, wanted to dabble with core
 2. **Dockerized**
 3. **Hosted in Kubernetes** 
 
-### Source Code Organization/Purpose
+# Source Code Organization/Purpose
 **Uptime.Web** - The web api that returns JSON with the uptime data, merely an http endpoint
 
 **Uptime.Domain** - Contains all classes/interfaces to serve up the data; all the implementation details
@@ -83,11 +83,11 @@ The `/proc/uptime` file determines the machine uptime in most Linux environments
 
 **docs** - README resource
 
-### Kubernetes Information
+# Kubernetes Information
 The *kubernetes run* example above is using a NFS share and a persistent volume claim for the app to access it. Within that folder is a symbolic link to the  `/proc/uptime` file.
 This was my initial solution to expose this file to a containerized app running in K8S.
 
-### Other Processes
+# Other Processes
 **Node-Red**
 ![node-red](./docs/node-red.PNG)
 This process runs every 30 seconds and determines if the box has gone down. If it has, then it sends an email, if not it does nothing.
