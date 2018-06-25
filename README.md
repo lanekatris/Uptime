@@ -41,10 +41,6 @@ sudo ln -s /proc/uptime /nfs/pv-uptime/uptime
 kubectl apply -f uptime.k8s.everything.yml
 ```
 
-```
-Don't forget the slow network I ha dto leav out, i cut off top of config file
-```
-
 **Result**
 ```
 {
@@ -55,18 +51,19 @@ Don't forget the slow network I ha dto leav out, i cut off top of config file
 }
 ```
 
+### Overall functionality
+`/proc/uptime` exposed on a nfs share, containerized application running in k8s can access a persistent volume claim, a http api allows access to the data, and finally a node-red flow checks at a set interval to determine if the box has gone down within 24 hours.
+
 ### How?
-The `/proc/uptime` file determines the machine uptime in most Linux environments.
-
-**First number**: How long the OS has been running in seconds
-
-**Second number**: Idle time (what is this? :confused:) 
+The `/proc/uptime` file determines the machine uptime in most Linux environments. Example contents below:
 
 `
 9852.99 17711.51
 `
 
-A .net app reads the file, parses it, and then returns a JSON object indicating seconds, minutes, etc. regarding uptime
+**First number**: How long the OS has been running in seconds
+
+**Second number**: Idle time (what is this? :confused:) 
 
 ### Goals
 1. **.NET core** - My experience in the past was with the full framework, wanted to dabble with core
@@ -80,4 +77,19 @@ A .net app reads the file, parses it, and then returns a JSON object indicating 
 
 **Uptime.Test** - Extremely basic unit tests to aid in testing the services in `Uptime.Domain`
 
-**uptime.k8s.everything.yml** - All necessary components to function in Kubernetes. Contains the `storage class`, `persistent volume`, `persistent volume claim`, `deployment`, and `service` 
+**uptime.k8s.everything.yml** - All necessary components to function in Kubernetes. Contains the `storage class`, `persistent volume`, `persistent volume claim`, `deployment`, and `service`
+
+**node-red.flow.json** - This is the entire flow for a node-red process that does the calling of the http api and sends email notifications
+
+**docs** - README resource
+
+### Kubernetes Information
+The *kubernetes run* example above is using a NFS share and a persistent volume claim for the app to access it. Within that folder is a symbolic link to the  `/proc/uptime` file.
+This was my initial solution to expose this file to a containerized app running in K8S.
+
+### Other Processes
+**Node-Red**
+![node-red](./docs/node-red.PNG)
+This process runs every 30 seconds and determines if the box has gone down. If it has, then it sends an email, if not it does nothing.
+
+It does have an override, so if you don't want to get spammed for a day you can call the http endpoints in the flow and it will create a temporary way to stop getting notifications.
